@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Training & Nutrition Calendar</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, 'JetBrains Mono', sans-serif;
+            background: #0f0f0f;
+            color: #e0e0e0;
+            padding: 16px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            border-bottom: 1px solid #333;
+            padding-bottom: 16px;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            font-weight: 600;
+        }
+
+        .nav-buttons {
+            display: flex;
+            gap: 8px;
+        }
+
+        button {
+            background: transparent;
+            border: 1px solid #FF6B35;
+            color: #FF6B35;
+            padding: 8px 16px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        button:hover {
+            background: #FF6B35;
+            color: #0f0f0f;
+        }
+
+        .month-nav {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 8px;
+            margin-bottom: 32px;
+        }
+
+        .day-header {
+            text-align: center;
+            font-weight: 600;
+            padding: 12px 0;
+            border-bottom: 1px solid #333;
+            font-size: 12px;
+            text-transform: uppercase;
+            color: #999;
+        }
+
+        .day-cell {
+            aspect-ratio: 1;
+            border: 1px solid #333;
+            padding: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .day-cell:hover {
+            border-color: #FF6B35;
+            background: rgba(255, 107, 53, 0.05);
+        }
+
+        .day-cell.other-month {
+            background: rgba(0, 0, 0, 0.3);
+            color: #666;
+        }
+
+        .day-cell.today {
+            border-color: #FF6B35;
+            background: rgba(255, 107, 53, 0.1);
+        }
+
+        .day-number {
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .workout-badge {
+            font-size: 10px;
+            padding: 4px 6px;
+            border-radius: 2px;
+            text-align: center;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-top: 4px;
+        }
+
+        .z2 { background: #4a7c9e; color: #fff; }
+        .tempo { background: #d97706; color: #fff; }
+        .intervals { background: #dc2626; color: #fff; }
+        .longrun { background: #7c3aed; color: #fff; }
+        .rest { background: #374151; color: #999; }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            padding: 24px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            border-bottom: 1px solid #333;
+            padding-bottom: 12px;
+        }
+
+        .modal-body {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .info-row {
+            display: grid;
+            grid-template-columns: 120px 1fr;
+            gap: 12px;
+            padding: 12px 0;
+            border-bottom: 1px solid #333;
+        }
+
+        .info-label {
+            font-weight: 600;
+            color: #FF6B35;
+            font-size: 14px;
+        }
+
+        .info-value {
+            color: #e0e0e0;
+            font-size: 14px;
+        }
+
+        .close-btn {
+            background: transparent;
+            border: 1px solid #333;
+            color: #999;
+            padding: 8px 16px;
+            cursor: pointer;
+            margin-top: 16px;
+            width: 100%;
+        }
+
+        .close-btn:hover {
+            border-color: #FF6B35;
+            color: #FF6B35;
+        }
+
+        .legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            padding: 16px;
+            border: 1px solid #333;
+            border-radius: 0;
+            margin-bottom: 24px;
+            font-size: 12px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border: 1px solid #333;
+        }
+
+        .stats-box {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 32px;
+        }
+
+        .stat-card {
+            border: 1px solid #333;
+            padding: 16px;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #999;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+        }
+
+        .stat-value {
+            font-size: 20px;
+            font-weight: 600;
+            color: #FF6B35;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Training & Nutrition Calendar</h1>
+            <div class="nav-buttons">
+                <button onclick="previousMonth()">← Prev</button>
+                <span id="monthYear" style="min-width: 150px; text-align: center; font-weight: 600;"></span>
+                <button onclick="nextMonth()">Next →</button>
+            </div>
+        </div>
+
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-color z2"></div>
+                <span>Zone 2 (5K) - 185g carbs</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color tempo"></div>
+                <span>Tempo (Z4) - 210g carbs</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color intervals"></div>
+                <span>Intervals - 210g carbs</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color longrun"></div>
+                <span>Long Run - 200g carbs</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color rest"></div>
+                <span>Rest Day - 160g carbs</span>
+            </div>
+        </div>
+
+        <div class="stats-box" id="statsBox"></div>
+
+        <div class="calendar-grid" id="calendarGrid"></div>
+
+        <div class="modal" id="dayModal">
+            <div class="modal-content">
+                <div class="modal-header" id="modalDate"></div>
+                <div class="modal-body" id="modalBody"></div>
+                <button class="close-btn" onclick="closeModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const MACRO_TARGETS = {
+            rest: { kcal: 1700, protein: 160, carbs: 160, fat: 60 },
+            z2: { kcal: 1850, protein: 165, carbs: 185, fat: 60 },
+            tempo: { kcal: 2000, protein: 170, carbs: 210, fat: 65 },
+            intervals: { kcal: 2000, protein: 170, carbs: 210, fat: 65 },
+            longrun: { kcal: 1950, protein: 165, carbs: 200, fat: 62 }
+        };
+
+        const WORKOUT_DETAILS = {
+            z2: { name: 'Zone 2 Easy Run (5K)', duration: '30-35 min', intensity: 'Z2 (138-152 bpm)', fuel: 'Post: carbs + protein within 30min' },
+            tempo: { name: 'Tempo Run (Z4)', duration: '25 min', intensity: 'Z4 (164-171 bpm)', fuel: 'Pre: carbs 2-3hr before, Post: within 30min' },
+            intervals: { name: 'Intervals (6x800m)', duration: '45-50 min', intensity: 'Z5 hard, Z1 recovery', fuel: 'Pre: carbs 2-3hr before, Post: within 30min' },
+            longrun: { name: 'Long Run', intensity: 'Z1-Z2', fuel: 'Pre: carbs 2-3hr before, During: if >90min, Post: within 30min' }
+        };
+
+        // Long run progression by month
+        const LONG_RUN_PROGRESSION = {
+            8: 5,  // Aug 2026: 5K
+            9: 5.5, // Sept
+            10: 6,  // Oct
+            11: 6.5, // Nov
+            12: 7,  // Dec
+            1: 7.5, // Jan 2027
+            2: 8,   // Feb
+            3: 8.5, // March
+            4: 9,   // April
+            5: 9.5, // May
+            6: 10   // June
+        };
+
+        let currentDate = new Date(2026, 7, 26); // Aug 26, 2026
+
+        function getWorkoutForDate(date) {
+            const dayOfWeek = date.getDay();
+            const month = date.getMonth() + 1;
+            
+            // Weekly pattern (Sun=0, Mon=1, etc):
+            // Mon: Z2, Tue: Rest, Wed: Tempo, Thu: Z2, Fri: Rest, Sat: Intervals, Sun: Long Run
+            const pattern = {
+                0: 'longrun', // Sunday
+                1: 'z2',      // Monday
+                2: 'rest',    // Tuesday
+                3: 'tempo',   // Wednesday
+                4: 'z2',      // Thursday
+                5: 'rest',    // Friday
+                6: 'intervals' // Saturday
+            };
+
+            return pattern[dayOfWeek];
+        }
+
+        function getMacrosForWorkout(workoutType) {
+            return MACRO_TARGETS[workoutType];
+        }
+
+        function renderCalendar() {
+            const year = currentDate.getFullYear();
+            const month = currentDate.getMonth();
+
+            document.getElementById('monthYear').textContent = currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+
+            const firstDay = new Date(year, month, 1);
+            const lastDay = new Date(year, month + 1, 0);
+            const prevLastDay = new Date(year, month, 0);
+
+            const calendarGrid = document.getElementById('calendarGrid');
+            calendarGrid.innerHTML = '';
+
+            // Day headers
+            const dayHeaders = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            dayHeaders.forEach(day => {
+                const header = document.createElement('div');
+                header.className = 'day-header';
+                header.textContent = day;
+                calendarGrid.appendChild(header);
+            });
+
+            // Previous month days
+            for (let i = prevLastDay.getDate() - firstDay.getDay() + 1; i <= prevLastDay.getDate(); i++) {
+                const cell = createDayCell(new Date(year, month - 1, i), true);
+                calendarGrid.appendChild(cell);
+            }
+
+            // Current month days
+            for (let i = 1; i <= lastDay.getDate(); i++) {
+                const cell = createDayCell(new Date(year, month, i), false);
+                calendarGrid.appendChild(cell);
+            }
+
+            // Next month days
+            for (let i = 1; i <= (42 - (firstDay.getDay() + lastDay.getDate())); i++) {
+                const cell = createDayCell(new Date(year, month + 1, i), true);
+                calendarGrid.appendChild(cell);
+            }
+
+            updateStats();
+        }
+
+        function createDayCell(date, otherMonth) {
+            const cell = document.createElement('div');
+            cell.className = 'day-cell';
+            if (otherMonth) cell.classList.add('other-month');
+
+            const today = new Date();
+            if (date.toDateString() === today.toDateString()) {
+                cell.classList.add('today');
+            }
+
+            const dayNumber = document.createElement('div');
+            dayNumber.className = 'day-number';
+            dayNumber.textContent = date.getDate();
+            cell.appendChild(dayNumber);
+
+            const workout = getWorkoutForDate(date);
+            const badge = document.createElement('div');
+            badge.className = `workout-badge ${workout}`;
+            badge.textContent = workout === 'rest' ? 'Rest' : 
+                                workout === 'z2' ? 'Z2' :
+                                workout === 'tempo' ? 'Tempo' :
+                                workout === 'intervals' ? 'Intervals' :
+                                'Long Run';
+            cell.appendChild(badge);
+
+            if (!otherMonth) {
+                cell.onclick = () => openDayDetail(date, workout);
+            }
+
+            return cell;
+        }
+
+        function openDayDetail(date, workoutType) {
+            const modal = document.getElementById('dayModal');
+            const modalDate = document.getElementById('modalDate');
+            const modalBody = document.getElementById('modalBody');
+
+            modalDate.textContent = date.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+
+            const macros = getMacrosForWorkout(workoutType);
+            const details = WORKOUT_DETAILS[workoutType] || {};
+            const month = date.getMonth() + 1;
+            const longRunDistance = LONG_RUN_PROGRESSION[month] || 'TBA';
+
+            let html = `
+                <div class="info-row">
+                    <div class="info-label">Workout</div>
+                    <div class="info-value">${details.name || 'Rest Day'}</div>
+                </div>
+            `;
+
+            if (workoutType !== 'rest') {
+                html += `
+                    <div class="info-row">
+                        <div class="info-label">Duration</div>
+                        <div class="info-value">${details.duration || 'N/A'}</div>
+                    </div>
+                    <div class="info-row">
+                        <div class="info-label">Intensity</div>
+                        <div class="info-value">${details.intensity || 'N/A'}</div>
+                    </div>
+                `;
+
+                if (workoutType === 'longrun') {
+                    html += `
+                        <div class="info-row">
+                            <div class="info-label">Distance</div>
+                            <div class="info-value">${longRunDistance}K</div>
+                        </div>
+                    `;
+                }
+
+                html += `
+                    <div class="info-row">
+                        <div class="info-label">Fuel Timing</div>
+                        <div class="info-value">${details.fuel || 'N/A'}</div>
+                    </div>
+                `;
+            }
+
+            html += `
+                <div style="background: rgba(255, 107, 53, 0.1); padding: 12px; border: 1px solid #FF6B35; margin: 12px 0;">
+                    <div style="font-weight: 600; color: #FF6B35; margin-bottom: 8px;">Nutrition Targets</div>
+                    <div class="info-row" style="border: none; padding: 0; margin: 6px 0;">
+                        <div class="info-label">Calories</div>
+                        <div class="info-value">${macros.kcal} kcal</div>
+                    </div>
+                    <div class="info-row" style="border: none; padding: 0; margin: 6px 0;">
+                        <div class="info-label">Protein</div>
+                        <div class="info-value">${macros.protein}g</div>
+                    </div>
+                    <div class="info-row" style="border: none; padding: 0; margin: 6px 0;">
+                        <div class="info-label">Carbs</div>
+                        <div class="info-value">${macros.carbs}g</div>
+                    </div>
+                    <div class="info-row" style="border: none; padding: 0; margin: 6px 0;">
+                        <div class="info-label">Fat</div>
+                        <div class="info-value">${macros.fat}g</div>
+                    </div>
+                </div>
+            `;
+
+            modalBody.innerHTML = html;
+            modal.classList.add('active');
+        }
+
+        function closeModal() {
+            document.getElementById('dayModal').classList.remove('active');
+        }
+
+        function updateStats() {
+            const year = currentDate.getFullYear();
+            const month = currentDate.getMonth();
+            const firstDay = new Date(year, month, 1);
+            const lastDay = new Date(year, month + 1, 0);
+
+            let z2Count = 0, tempoCount = 0, intervalsCount = 0, longrunCount = 0, restCount = 0;
+
+            for (let i = 1; i <= lastDay.getDate(); i++) {
+                const date = new Date(year, month, i);
+                const workout = getWorkoutForDate(date);
+                if (workout === 'z2') z2Count++;
+                else if (workout === 'tempo') tempoCount++;
+                else if (workout === 'intervals') intervalsCount++;
+                else if (workout === 'longrun') longrunCount++;
+                else restCount++;
+            }
+
+            const statsBox = document.getElementById('statsBox');
+            statsBox.innerHTML = `
+                <div class="stat-card">
+                    <div class="stat-label">Zone 2 Runs</div>
+                    <div class="stat-value">${z2Count}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Tempo Runs</div>
+                    <div class="stat-value">${tempoCount}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Interval Sessions</div>
+                    <div class="stat-value">${intervalsCount}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Long Runs</div>
+                    <div class="stat-value">${longrunCount}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Rest Days</div>
+                    <div class="stat-value">${restCount}</div>
+                </div>
+            `;
+        }
+
+        function previousMonth() {
+            currentDate.setMonth(currentDate.getMonth() - 1);
+            renderCalendar();
+        }
+
+        function nextMonth() {
+            currentDate.setMonth(currentDate.getMonth() + 1);
+            renderCalendar();
+        }
+
+        document.addEventListener('click', (e) => {
+            const modal = document.getElementById('dayModal');
+            if (e.target === modal) {
+                closeModal();
+            }
+        });
+
+        renderCalendar();
+    </script>
+</body>
+</html>
